@@ -20,9 +20,9 @@ const PricingSlider = () => {
   };
 
   return (
-    <div className="px-6 w-[250px]">
+    <div className="w-[250px]">
       <div className="text-xs text-gray-500 flex justify-between">
-        <span className="mr-5">₹{minPrice}</span>
+        <span className="w-[80px]">${minPrice}</span>
         <span className="w-[250px] mt-2">
             <Range
                 step={1}
@@ -62,7 +62,7 @@ const PricingSlider = () => {
                 }}
                 />
             </span>
-        <span className="ml-5">₹{maxPrice}</span>
+            <span className="w-[80px] ml-5">${maxPrice}</span>
       </div>
     </div>
   );

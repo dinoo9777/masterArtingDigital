@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { fetchContentData } from "../utils/fetchData";
 import { setItems, setSearch, setFilters, setSort, setMinPrice, setMaxPrice} from "../store/slices/contentSlice";
@@ -20,13 +20,17 @@ const ReverseFilterMap: Record<number, string> = {
   1: "free",
   2: "viewonly",
 };
+
 const Home = () => {
   const DEFAULT_MIN = 0;
   const DEFAULT_MAX = 500; // or whatever your slider's maximum is
+  const fetchedRef = useRef(false);
 
   const dispatch = useAppDispatch();
   const { items, filters, search, sort, minPrice, maxPrice } = useAppSelector((state) => state.content);
   const [params, setParams] = useSearchParams();
+  const ITEMS_PER_LOAD = 12;
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_LOAD);
 
   // ⬇️ On mount: parse URL
   useEffect(() => {
@@ -47,7 +51,16 @@ const Home = () => {
 
   // ⬇️ Sync URL from Redux state
   useEffect(() => {
-    const obj: Record<string, string> = {};
+      const obj: Record<string, string | null | undefined> = {
+          search: search || null,
+          sort: sort || null,
+          min: minPrice !== DEFAULT_MIN ? String(minPrice) : null,
+          max: maxPrice !== DEFAULT_MAX ? String(maxPrice) : null,
+          priceoption: filters.length > 0
+              ? filters.map((num) => ReverseFilterMap[num]).filter(Boolean).join("_")
+              : null
+
+      };
 
     if (search) obj.search = search;
     if (sort) obj.sort = sort;
@@ -65,10 +78,13 @@ const Home = () => {
     } else {
       setParams({}, { replace: true });
     }
-  }, [search, filters, sort, maxPrice, minPrice]);
+  }, [search, filters, sort, maxPrice, setParams, minPrice]);
 
   // ⬇️ Fetch content data
-  useEffect(() => {
+    useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+
     fetchContentData()
       .then((res) => dispatch(setItems(res)))
       .catch((err) => console.error("Fetch error:", err));
@@ -103,18 +119,42 @@ const Home = () => {
             return 0;
         }
     }); 
+    const loadMoreRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                setVisibleCount((prev) => prev + ITEMS_PER_LOAD);
+            }
+        });
 
+        const current = loadMoreRef.current;
+        if (current) {
+            observer.observe(current);
+        }
+
+        return () => {
+            if (current) {
+                observer.unobserve(current);
+            }
+        };
+    }, []);
+    const visibleItems = filteredItems.slice(0, visibleCount);
   return (
     <div className=" text-gray-100 min-h-screen p-4 bg-[#19191e]">
       <div className="max-w-7xl mx-auto">
-        <KeywordSearch />
-        <PricingFilter />
-        <SortBy />
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 mx-5">
-          {filteredItems.map((item) => (
-            <ContentCard key={item.id} item={item} />
-          ))}
+        <div className="sticky top-15 bg-[#19191e]">
+            <KeywordSearch />
+            <PricingFilter />
         </div>
+        <SortBy />
+        <div className="grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-5 mx-5">
+        {
+            visibleItems.map((item) => (
+                <ContentCard key={item.id} item={item} />
+            ))
+        }
+        </div>
+        <div ref={loadMoreRef} className="h-10" />
       </div>
     </div>
   );

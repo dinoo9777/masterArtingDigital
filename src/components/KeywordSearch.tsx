@@ -1,31 +1,43 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-import { setSearch ,resetAll} from "../store/slices/contentSlice";
+import { setSearch } from "../store/slices/contentSlice";
+import { useDebounce } from "../hooks/useDebounce"; // Assuming you have a debounce utility
 
 const KeywordSearch = () => {
   const dispatch = useAppDispatch();
   const search = useAppSelector((state) => state.content.search);
+  const [input, setInput] = useState(search);
+  const debouncedInput = useDebounce(input, 400);
 
-  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    dispatch(setSearch(e.target.value));
-  };
-  const onClear = () => {
-    //dispatch(setSearch(""));
-    dispatch(resetAll());
-  };
+
+    useEffect(() => {
+        setInput(search);
+    }, [search]);
+
+    useEffect(() => {
+        dispatch(setSearch(debouncedInput));
+    }, [dispatch,debouncedInput]);
+
+    const onChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setInput(e.target.value);
+    }, []);
+    const onClear = () => {
+        dispatch(setSearch(""));
+        setInput("");
+    };
 
   return (
-    <div className="relative my-6 mx-5">   
+    <div className="relative my-6 mx-5 ">   
       {/* 🔤 Input */}
       <input
         type="text"
         placeholder="Find the item's you're looking for"
-        value={search}
+        value={input}
         onChange={onChange}
         className="w-full p-4 px-5 bg-[#1e1e23] text-gray-100 rounded focus:outline-none"
       />
     {/* 🔍 Search Icon */}
-    {!search && (
+    {!input && (
       <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 text-sm">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -43,7 +55,7 @@ const KeywordSearch = () => {
         </svg>
       </span>)}
       {/* ✕ Clear Button */}
-      {search && (
+    {input && (
         <a href="#"
           onClick={(e) => { e.preventDefault(); onClear(); }}
           className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 text-sm"
