@@ -1,4 +1,4 @@
-export function parseFParam(f: string): Record<string, string> {
+﻿export function parseFParam(f: string): Record<string, string> {
   const result: Record<string, string> = {};
   if (!f) return result;
 
@@ -12,9 +12,9 @@ export function parseFParam(f: string): Record<string, string> {
   return result;
 }
 
-export function buildFParam(obj: Record<string, string>): string {
-  return Object.entries(obj)
-    .filter(([_, v]) => v !== undefined && v !== "")
-    .map(([k, v]) => `${k}:${v}`)
-    .join("::");
+export function buildFParam(obj: Record<string, string | null | undefined>): string {
+    return Object.entries(obj)
+        .filter(([_, v]) => v != null && v !== "") // filter out null/undefined/empty
+        .map(([k, v]) => `${k}:${v}`)
+        .join("::");
 }
